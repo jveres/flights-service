@@ -240,7 +240,7 @@ class ServerController {
   }
 
   @Get("/schedule")
-  stream({ url, request }: { url: URL; request: Request }) {
+  api({ url, request }: { url: URL; request: Request }) {
     const accept = request.headers.get("accept") || "text/html";
     if (accept.includes("text/html")) { // HTML request
       return this.html();
