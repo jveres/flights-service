@@ -19,21 +19,21 @@ docker run -p 7999:7999 flights-service
 ### GET http://localhost:7999/schedule
 #### Headers:
 #### - `"accept": "text/html"`
-#### Returns a test HTML page. useful for checking if everything works as expected.
+#### Returns a test HTML page. Useful for checking if everything works as expected.
 
 ### GET http://localhost:7999/schedule
 #### Query parameters:
 #### - `last-known-id=[number]`
 #### Headers:
 #### - `"accept": "application/json"`
-#### Returns daliy schedule as json.
+#### Returns daily schedule as json data.
 
 ### GET http://localhost:7999/schedule
 #### Query parameters:
 #### - `last-known-id=[number]`
 #### Headers:
 #### - `"accept": "text/event-stream"`
-#### Returns daliy schedule in the form of server sent events. Updates are streamed realtime.
+#### Returns daily schedule in the form of server sent events. Updates are streamed realtime.
 
 ## SQL schema
 ```sql
