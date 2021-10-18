@@ -18,8 +18,11 @@ const CHANNEL = "schedule";
 const SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
 const DAILY_SCHEDULE_EVENT_NAME = "daily_schedule";
 const SCHEDULE_REFRESH_MS = 10000;
+const PUSHPIN_BIN = Deno.env.get("PUSHPIN_BIN");
 
-const db = new DB("flights.db");
+const pushpin = PUSHPIN_BIN ? Deno.run({ cmd: [PUSHPIN_BIN] }) : undefined;
+const db = new DB("flights.db", { mode: "read" });
+
 const columns = [
   "id",
   "year",
@@ -177,7 +180,7 @@ class ServerController {
           <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
           <style type="text/css">
             body {
-              background-color: #eee;
+              background-color: #fff;
             }
             .header {
               border-bottom: 1px dashed lightgray;
@@ -283,7 +286,8 @@ class ServerController {
 }
 
 function gracefulShutdown() {
-  db.close();
+  db?.close();
+  pushpin?.close();
   Deno.exit();
 }
 
