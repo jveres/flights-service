@@ -4,11 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import {
-  Get,
-  HttpServer,
-  serve,
-} from "https://deno.land/x/deco@0.6.0/mod.ts";
+import { Get, HttpServer, serve } from "https://deno.land/x/deco@0.6.1/mod.ts";
 import { DB } from "https://deno.land/x/sqlite@v3.1.1/mod.ts";
 import { onSignal } from "https://deno.land/std@0.111.0/signal/mod.ts";
 import { writeAll } from "https://deno.land/std@0.111.0/io/util.ts";
