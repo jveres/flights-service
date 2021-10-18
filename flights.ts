@@ -8,7 +8,7 @@ import {
   Get,
   HttpServer,
   serve,
-} from "../deco/decorators/httpserver.decorator.ts";
+} from "https://deno.land/x/deco@0.6.0/mod.ts";
 import { DB } from "https://deno.land/x/sqlite@v3.1.1/mod.ts";
 import { onSignal } from "https://deno.land/std@0.111.0/signal/mod.ts";
 import { writeAll } from "https://deno.land/std@0.111.0/io/util.ts";
