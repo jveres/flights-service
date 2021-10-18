@@ -13,6 +13,8 @@ deno compile -A --unstable --no-check --target x86_64-unknown-linux-gnu --output
 docker build -t flights-service .
 docker run -p 7999:7999 flights-service
 ```
+![Terminal output!](/images/term.png)
+![Browser page!](/images/browser.png)
 ## Available APIs
 ### GET http://localhost:7999/schedule
 #### Headers:
