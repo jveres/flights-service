@@ -6,8 +6,8 @@
 
 import { Get, HttpServer, serve } from "https://deno.land/x/deco@0.6.1/mod.ts";
 import { DB } from "https://deno.land/x/sqlite@v3.1.1/mod.ts";
-import { onSignal } from "https://deno.land/std@0.111.0/signal/mod.ts";
-import { writeAll } from "https://deno.land/std@0.111.0/io/util.ts";
+import { onSignal } from "https://deno.land/std@0.112.0/signal/mod.ts";
+import { writeAll } from "https://deno.land/std@0.112.0/io/util.ts";
 
 const PUBLISH_URI = "http://localhost:5561/publish";
 const CHANNEL = "schedule";
@@ -127,7 +127,7 @@ class ServerController {
       if (prevLastId !== undefined) {
         print(`${"✈️ ".repeat(schedule.length)} ${this.lastId} `);
         this.schedule = this.schedule.concat(schedule);
-        schedule.map((sched) =>
+        schedule.map((sched: Record<string, any>) =>
           publish(
             this.sseEvent({
               id: sched.id,
