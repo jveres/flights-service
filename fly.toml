@@ -1,4 +1,4 @@
-# fly.toml file generated for flights-service on 2021-10-19T12:52:44+02:00
+# fly.toml file generated for flights-service on 2021-10-19T14:09:10+02:00
 
 app = "flights-service"
 
