@@ -270,6 +270,7 @@ class ServerController {
               "content-type": "text/event-stream",
               "grip-hold": "stream",
               "grip-channel": CHANNEL,
+              "grip-keep-alive": "format=cstring; timeout=30; mode=interval",
             },
           },
         };
