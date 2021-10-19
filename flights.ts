@@ -208,18 +208,18 @@ class ServerController {
             const add = (message) => {
               var el = document.createElement("span");
               el.className = "flash";
-              el.innerHTML = message;
+              el.innerHTML = message.slice(0, 1000) + "<br>"; // fixing Safari display bug with long texts
               document.body.getElementsByClassName("fixed")[0].prepend(el);
             };
-            sse.addEventListener("${SCHEDULED_DEPARTURE_EVENT_NAME}", (e) => add("‣ ✈️ " + e.data + "<br>"));
-            sse.addEventListener("${DAILY_SCHEDULE_EVENT_NAME}", (e) => add("‣ 🗓 " + e.data + "<br>"));
+            sse.addEventListener("${SCHEDULED_DEPARTURE_EVENT_NAME}", (e) => add("‣ ✈️ " + e.data));
+            sse.addEventListener("${DAILY_SCHEDULE_EVENT_NAME}", (e) => add("‣ 🗓 " + e.data));
             sse.addEventListener("error", (e) => {
-              if (connected) add("‣ ❌ server disconnected <br>");
+              if (connected) add("‣ ❌ server disconnected");
               connected = false;
             });
             sse.addEventListener("open", (e) => {
               connected = true;
-              add("‣ ✅ server connected<br>");
+              add("‣ ✅ server connected");
             });
           </script>
         </head>
