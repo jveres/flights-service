@@ -174,6 +174,7 @@ class ServerController {
         <head>
           <title>Scheduled departure events test page</title>
           <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+          <script src="https://cdn.jsdelivr.net/npm/reconnecting-eventsource@1.1.1/dist/ReconnectingEventSource.min.js"></script>
           <style type="text/css">
             body {
               background-color: #fff;
@@ -204,7 +205,7 @@ class ServerController {
           <meta charset="utf-8">
           <script>
             var connected = false;
-            const sse = new EventSource('/schedule');
+            const sse = new ReconnectingEventSource('/schedule');
             const add = (message) => {
               var el = document.createElement("span");
               el.className = "flash";
