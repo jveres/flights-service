@@ -23,4 +23,5 @@ RUN cat /rootfs.list | tar -T- -cphf- | tar -C /rootfs -xpf-
 FROM scratch
 COPY --from=0 /rootfs/ /
 EXPOSE 7999
+ENV HOST="0.0.0.0"
 CMD ["/flights"]
