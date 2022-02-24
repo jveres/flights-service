@@ -19,42 +19,18 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { writeAll } from "https://deno.land/std@0.126.0/streams/conversion.ts";
-import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.1/mod.ts";
+import { writeAllSync } from "https://deno.land/std@0.126.0/streams/conversion.ts";
+import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.3/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
+import { Multicast } from "https://cdn.skypack.dev/queueable";
 
 const HOST = Deno.env.get("HOST") ?? "127.0.0.1";
 const PORT = 7999;
 const STREAM_REFRESH = 60;
-const STREAM_KEEPALIVE = 30;
+const STREAM_KEEPALIVE = 15;
 const SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 const DB = new Database("flights.db", { readonly: true, create: false });
-
-// TODO: add to Deco utils
-class MulticastAsyncIterator {
-  #results: unknown[] = [];
-  #resolve: (_?: unknown) => void = () => {};
-  #promise = new Promise((r) => this.#resolve = r);
-
-  push(value: unknown) {
-    this.#results.push(value);
-    this.#resolve();
-    this.#promise = new Promise((r) => this.#resolve = r);
-  }
-
-  async *generator() {
-    while (true) {
-      await this.#promise;
-      yield* this.#results;
-      this.#results = [];
-    }
-  }
-
-  [Symbol.asyncIterator]() {
-    return this.generator();
-  }
-}
 
 class FlightsService {
   #lastId: string | undefined;
@@ -99,7 +75,7 @@ class FlightsService {
     this.keepAlive();
   }
 
-  #multicast = new MulticastAsyncIterator();
+  #multicast = new Multicast();
 
   refreshSchedule(forceRefresh = false) {
     const date = new Date();
@@ -122,7 +98,7 @@ class FlightsService {
           schedule.map((sched: Record<string, unknown>) =>
             this.#multicast.push(
               HttpServer.SSE({
-                id: `${sched.id}`,
+                id: `${sched.ID}`,
                 event: SCHEDULED_DEPARTURE_EVENT_NAME,
                 data: JSON.stringify(sched),
               }),
@@ -139,9 +115,11 @@ class FlightsService {
     setTimeout(() => this.refreshSchedule(), 1_000);
   }
 
+  #keepalive = 0;
+
   keepAlive() {
     this.#multicast.push(
-      HttpServer.SSE({ comment: `keep-alive#${+new Date()}` }),
+      HttpServer.SSE({ comment: `keep-alive#${++this.#keepalive}` }),
     );
     setTimeout(() => this.keepAlive(), STREAM_KEEPALIVE * 1_000);
   }
@@ -196,7 +174,7 @@ class HttpService {
 }
 
 function print(args: string) {
-  writeAll(Deno.stdout, new TextEncoder().encode(args));
+  writeAllSync(Deno.stdout, new TextEncoder().encode(args));
 }
 
 function gracefulShutdown() {
