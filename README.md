@@ -4,13 +4,14 @@ This demo service makes use of the [Airlines On-Time Performance](https://www.tr
 
 ## Bundle, compress and compile source into x86_64 Linux binary:
 ```sh
-deno bundle httpserver.ts httpserver.js
-deno compile --allow-read --allow-net --allow-env --no-check --target x86_64-unknown-linux-gnu --output httpserver-x86_64-unknown-linux-gnu httpserver.js
+deno bundle --unstable httpserver.ts httpserver.js
+terser --compress --mangle --output httpserver.min.js -- httpserver.js  
+deno compile --unstable -A --no-check --target x86_64-unknown-linux-gnu --output flights-x86_64-unknown-linux-gnu httpserver.min.js
 ```
 ## Build and run as container image:
 ```sh
 docker build --platform linux/amd64 -t flights-service . 
-docker run -p 7999:7999 flights-service
+docker run --platform linux/amd64 -p 7999:7999 flights-service
 ```
 ## Available APIs
 ### GET http://localhost:7999/

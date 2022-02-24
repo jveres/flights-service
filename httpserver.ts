@@ -19,9 +19,9 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { DB as SQLITE } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 import { writeAll } from "https://deno.land/std@0.126.0/streams/conversion.ts";
 import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.1/mod.ts";
+import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
 
 const HOST = Deno.env.get("HOST") ?? "127.0.0.1";
 const PORT = 7999;
@@ -29,24 +29,7 @@ const STREAM_REFRESH = 60;
 const STREAM_KEEPALIVE = 30;
 const SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
-const DB = new SQLITE("flights.db", { mode: "read" });
-const COLS = [
-  "id",
-  "fl_date",
-  "origin",
-  "origin_city_name",
-  "dest",
-  "dest_city_name",
-  "crs_dep_time",
-  "dep_time",
-  "dep_delay",
-  "crs_arr_time",
-  "arr_time",
-  "arr_delay",
-  "tail_num",
-  "op_carrier",
-  "op_carrier_fl_num",
-];
+const DB = new Database("flights.db", { readonly: true, create: false });
 
 // TODO: add to Deco utils
 class MulticastAsyncIterator {
@@ -97,23 +80,17 @@ class FlightsService {
     // deno-fmt-ignore
     const query = `select * from flights where fl_date = '2018-${month}-${day}' and crs_dep_time <= ${time}${lastId ?  " and id > " + lastId : ""};`;
     if (logQuery) console.log(`SQL> ${query}`);
-    const res = DB.query(query);
+    const res = DB.queryObject(query);
     if (printHitTime && res?.length > 0) {
       print(`⏱ ${hours}:${mins.toString().padStart(2, "0")} `);
     }
-    return res?.map((row: unknown[]) => {
-      const line = {} as { [key: string]: unknown };
-      row.map((col: unknown, idx: number) => {
-        line[COLS[idx]] = col;
-      });
-      return line;
-    });
+    return res;
   }
 
   getSchedule(lastId = "0"): unknown[] {
     return this.#schedule.filter((el) => {
-      const { id } = el as Record<string, string>;
-      if (id >= lastId) return el;
+      const { ID } = el as Record<string, string>;
+      if (ID >= lastId) return el;
     });
   }
 
@@ -136,7 +113,7 @@ class FlightsService {
         this.#lastId !== undefined,
       );
       if (schedule.length > 0) {
-        this.#lastId = schedule[schedule.length - 1]["id"] as string;
+        this.#lastId = schedule[schedule.length - 1]["ID"] as string;
       }
       if (this.#lastId !== prevLastId) {
         if (prevLastId !== undefined) {
@@ -204,8 +181,8 @@ class HttpService {
   schedule(
     { urlParams }: { urlParams: string },
   ) {
-    const lastKnownId = new URLSearchParams(urlParams).get("last-known-id") ??
-      "0";
+    // deno-fmt-ignore
+    const lastKnownId = new URLSearchParams(urlParams).get("last-known-id") ?? "0";
     const schedule = this.#flightsService.getSchedule(lastKnownId);
     return {
       body: JSON.stringify(schedule),

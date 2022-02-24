@@ -1,4 +1,5 @@
 .vscode
 httpserver.js
+httpserver.min.js
 fly.toml
 flights-x86_64-unknown-linux-gnu

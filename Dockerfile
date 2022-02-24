@@ -1,10 +1,11 @@
 FROM ubuntu:20.04
-RUN apt-get update && apt-get -y install binutils
+RUN apt-get update && apt-get -y install binutils libsqlite3-0
 
 COPY flights-x86_64-unknown-linux-gnu /flights
 COPY flights.db /
 COPY index.html /
 
+RUN cp /usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6 /usr/lib/x86_64-linux-gnu/libsqlite3.so
 RUN mkdir -p /rootfs
 RUN ldd /flights \
     /lib/x86_64-linux-gnu/libnss_files.so.* \
@@ -16,6 +17,7 @@ RUN cat /rootfs.list | grep -v '/flights' | xargs strip
 RUN echo /flights >> /rootfs.list
 RUN echo /flights.db >> /rootfs.list
 RUN echo /index.html >> /rootfs.list
+RUN echo /usr/lib/x86_64-linux-gnu/libsqlite3.so >> /rootfs.list
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
 RUN echo /etc/nsswitch.conf >> /rootfs.list
 RUN cat /rootfs.list | tar -T- -cphf- | tar -C /rootfs -xpf-
@@ -23,5 +25,6 @@ RUN cat /rootfs.list | tar -T- -cphf- | tar -C /rootfs -xpf-
 FROM scratch
 COPY --from=0 /rootfs/ /
 EXPOSE 7999
+ENV PORT=7999
 ENV HOST="0.0.0.0"
 CMD ["/flights"]
