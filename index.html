@@ -44,26 +44,6 @@
     }
   </style>
   <meta charset="utf-8">
-  <script>
-    var connected = false;
-    var SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
-    const sse = new ReconnectingEventSource('/stream');
-    const add = (message) => {
-      var el = document.createElement("span");
-      el.className = "flash";
-      el.innerHTML = message.slice(0, 1000) + "<br>"; // fixing Safari display bug with long texts
-      document.body.getElementsByClassName("fixed")[0].prepend(el);
-    };
-    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => add("‣ 🛫 " + e.data));
-    sse.addEventListener("error", (e) => {
-      if (connected) add("‣ ❌ server disconnected");
-      connected = false;
-    });
-    sse.addEventListener("open", (e) => {
-      connected = true;
-      add("‣ ✅ server connected");
-    });
-  </script>
 </head>
 
 <body>
@@ -73,6 +53,27 @@
     <span class="centered">Streaming scheduled departure events from NYC Airport (2018 dataset)</span>
   </div>
   <pre class="fixed flash"></pre>
+  <script>
+    var connected = false;
+    var SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
+    const add = (message) => {
+      var el = document.createElement("span");
+      el.className = "flash";
+      el.innerHTML = message.slice(0, 1000) + "<br>"; // fixing Safari display bug with long texts
+      document.body.getElementsByClassName("fixed")[0].prepend(el);
+    };
+    const sse = new ReconnectingEventSource('/stream');
+    add("‣ 🚀 Server connecting...");
+    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => add("‣ 🛫 " + e.data));
+    sse.addEventListener("error", (e) => {
+      if (connected) add("‣ 🔴 Server disconnected, reconnecting...");
+      connected = false;
+    });
+    sse.addEventListener("open", (e) => {
+      connected = true;
+      add("‣ 🟢 Server connected.");
+    });
+  </script>
 </body>
 
 </html>
