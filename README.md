@@ -14,8 +14,6 @@ docker run -p 7999:7999 flights-service
 ```
 ## Available APIs
 ### GET http://localhost:7999/
-#### Headers:
-#### - `"accept": "text/html"`
 #### Returns a test HTML page. Useful for checking if everything works as expected.
 
 ### GET http://localhost:7999/schedule
@@ -26,7 +24,7 @@ docker run -p 7999:7999 flights-service
 ### GET http://localhost:7999/stream
 #### Query parameters:
 #### - `last-known-id=[number]`
-#### Returns daily schedule in the form of server sent events. Updates are streamed realtime.
+#### Returns daily schedule in the form of server sent events. Updates are streaming realtime.
 
 ## SQL schema
 ```sql
