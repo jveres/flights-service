@@ -95,14 +95,15 @@ class FlightsService {
         if (prevLastId !== undefined) {
           print(`${"🛫 ".repeat(schedule.length)} ${this.#lastId} `);
           this.#schedule = this.#schedule.concat(schedule);
+          const data: string[] = [];
           schedule.map((sched: Record<string, unknown>) =>
-            this.#multicast.push(
-              HttpServer.SSE({
-                id: `${sched.ID}`,
-                event: SCHEDULED_DEPARTURE_EVENT_NAME,
-                data: JSON.stringify(sched),
-              }),
-            )
+            data.push(JSON.stringify(sched))
+          );
+          this.#multicast.push(
+            HttpServer.SSE({
+              event: SCHEDULED_DEPARTURE_EVENT_NAME,
+              data: data,
+            }),
           );
         } else {
           this.#schedule = schedule;
