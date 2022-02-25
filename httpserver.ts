@@ -54,7 +54,7 @@ class FlightsService {
     const mins = date.getMinutes().toString().padStart(2, "0");
     const time = `${hours}${mins}`;
     // deno-fmt-ignore
-    const query = `select * from flights where fl_date = '2018-${month}-${day}' and crs_dep_time <= ${time}${lastId ?  " and id > " + lastId : ""};`;
+    const query = `select * from flights where fl_date = '2018-${month}-${day}' and crs_dep_time <= '${time}'${lastId ?  " and id > " + lastId : ""};`;
     if (logQuery) console.log(`SQL> ${query}`);
     const res = DB.queryObject(query);
     if (printHitTime && res?.length > 0) {
@@ -95,14 +95,15 @@ class FlightsService {
         if (prevLastId !== undefined) {
           print(`${"🛫 ".repeat(schedule.length)} ${this.#lastId} `);
           this.#schedule = this.#schedule.concat(schedule);
+          const data: string[] = [];
           schedule.map((sched: Record<string, unknown>) =>
-            this.#multicast.push(
-              HttpServer.SSE({
-                id: `${sched.ID}`,
-                event: SCHEDULED_DEPARTURE_EVENT_NAME,
-                data: JSON.stringify(sched),
-              }),
-            )
+            data.push(JSON.stringify(sched))
+          );
+          this.#multicast.push(
+            HttpServer.SSE({
+              event: SCHEDULED_DEPARTURE_EVENT_NAME,
+              data: data,
+            }),
           );
         } else {
           this.#schedule = schedule;
