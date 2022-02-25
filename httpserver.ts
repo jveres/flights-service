@@ -20,7 +20,7 @@
  */
 
 import { writeAllSync } from "https://deno.land/std@0.127.0/streams/conversion.ts";
-import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.3/mod.ts";
+import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.4/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
 import { Multicast } from "https://cdn.skypack.dev/queueable";
 
@@ -58,7 +58,7 @@ class FlightsService {
     if (logQuery) console.log(`SQL> ${query}`);
     const res = DB.queryObject(query);
     if (printHitTime && res?.length > 0) {
-      print(`⏱ ${hours}:${mins.toString().padStart(2, "0")} `);
+      print(`● ${hours}:${mins.toString().padStart(2, "0")} `);
     }
     return res;
   }
@@ -95,15 +95,13 @@ class FlightsService {
         if (prevLastId !== undefined) {
           print(`${"🛫 ".repeat(schedule.length)} ${this.#lastId} `);
           this.#schedule = this.#schedule.concat(schedule);
-          const data: string[] = [];
-          schedule.map((sched: Record<string, unknown>) =>
-            data.push(JSON.stringify(sched))
-          );
-          this.#multicast.push(
-            HttpServer.SSE({
-              event: SCHEDULED_DEPARTURE_EVENT_NAME,
-              data: data,
-            }),
+          schedule.map((sched) =>
+            this.#multicast.push(
+              HttpServer.SSE({
+                event: SCHEDULED_DEPARTURE_EVENT_NAME,
+                data: JSON.stringify(sched),
+              }),
+            )
           );
         } else {
           this.#schedule = schedule;
