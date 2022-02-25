@@ -19,7 +19,7 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { writeAllSync } from "https://deno.land/std@0.126.0/streams/conversion.ts";
+import { writeAllSync } from "https://deno.land/std@0.127.0/streams/conversion.ts";
 import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.3/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
 import { Multicast } from "https://cdn.skypack.dev/queueable";
@@ -116,11 +116,9 @@ class FlightsService {
     setTimeout(() => this.refreshSchedule(), 1_000);
   }
 
-  #keepalive = 0;
-
   keepAlive() {
     this.#multicast.push(
-      HttpServer.SSE({ comment: `keep-alive#${++this.#keepalive}` }),
+      HttpServer.SSE({ comment: "" }),
     );
     setTimeout(() => this.keepAlive(), STREAM_KEEPALIVE * 1_000);
   }
@@ -136,6 +134,7 @@ class HttpService {
   @HttpServer.Get()
   @HttpServer.Chunked("text/event-stream")
   async *stream() {
+    yield HttpServer.SSE({ comment: "" });
     for await (const event of this.#flightsService) {
       yield event;
     }
