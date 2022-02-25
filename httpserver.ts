@@ -54,7 +54,7 @@ class FlightsService {
     const mins = date.getMinutes().toString().padStart(2, "0");
     const time = `${hours}${mins}`;
     // deno-fmt-ignore
-    const query = `select * from flights where fl_date = '2018-${month}-${day}' and crs_dep_time <= ${time}${lastId ?  " and id > " + lastId : ""};`;
+    const query = `select * from flights where fl_date = '2018-${month}-${day}' and crs_dep_time <= '${time}'${lastId ?  " and id > " + lastId : ""};`;
     if (logQuery) console.log(`SQL> ${query}`);
     const res = DB.queryObject(query);
     if (printHitTime && res?.length > 0) {
