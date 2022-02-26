@@ -57,21 +57,22 @@
     var connected = false;
     var SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
     const add = (message) => {
+      message = `[${new Date().toISOString().slice(0, 16)}] ${message}`;
       var el = document.createElement("span");
       el.className = "flash";
       el.innerHTML = message.slice(0, 1000) + "<br>"; // fixing Safari display bug with long texts
       document.body.getElementsByClassName("fixed")[0].prepend(el);
     };
-    add("► ⚪️ Server connecting...");
+    add("⚪️ Server connecting...");
     const sse = new ReconnectingEventSource('/stream');
-    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => add("► 🛫 " + e.data));
+    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => add("🛫 " + e.data));
     sse.addEventListener("error", (e) => {
-      if (connected) add("► 🔴 Server disconnected, reconnecting...");
+      if (connected) add("🔴 Server disconnected, reconnecting...");
       connected = false;
     });
     sse.addEventListener("open", (e) => {
       connected = true;
-      add("► 🟢 Server connected.");
+      add("🟢 Server connected.");
     });
   </script>
 </body>
