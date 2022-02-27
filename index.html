@@ -10,19 +10,19 @@
   <style type="text/css">
     body {
       background-color: #fff;
-      font-family: sans-serif;
+      font-family: "sans-serif";
     }
 
     .header {
       border-bottom: 1px dashed lightgray;
       padding-bottom: 5px;
-      font-size: 16px;
+      font-size: 17px;
     }
 
     .fixed {
       font-family: Courier New;
       font-size: 14px;
-      padding-left: 10px;
+      margin: auto;
     }
 
     .centered {
@@ -42,6 +42,86 @@
     .flash {
       animation: yellowfade 3s;
     }
+
+    .json>.json__item {
+      display: inline;
+    }
+
+    .json::before {
+      content: "{";
+    }
+
+    .json::after {
+      content: "}";
+    }
+
+    .json__item {
+      display: none;
+    }
+
+    .json__item:not(:last-child)::after {
+      content: ", ";
+    }
+
+    .json__item--collapsible {
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .json__item--collapsible::before {
+      content: "+";
+      position: absolute;
+      left: 5px;
+    }
+
+    .json__item--collapsible::after {
+      background-color: lightgrey;
+      content: "";
+      height: 100%;
+      left: 9px;
+      position: absolute;
+      top: 26px;
+      width: 1px;
+    }
+
+    .json__item--collapsible:hover>.json__key,
+    .json__item--collapsible:hover>.json__value {
+      text-decoration: underline;
+    }
+
+    .json__toggle {
+      display: none;
+    }
+
+    .json__toggle:checked~.json__item {
+      display: block;
+    }
+
+    .json__key {
+      color: darkblue;
+      display: inline;
+    }
+
+    .json__key::after {
+      content: ": ";
+    }
+
+    .json__value {
+      display: inline;
+    }
+
+    .json__value--string {
+      color: green;
+    }
+
+    .json__value--number {
+      color: blue;
+    }
+
+    .json__value--boolean {
+      color: red;
+    }
   </style>
   <meta charset="utf-8">
 </head>
@@ -54,25 +134,114 @@
   </div>
   <pre class="fixed flash"></pre>
   <script>
+    // JSON viewer
+    function jsonViewer(json, collapsible = false) {
+      var TEMPLATES = {
+        item: '<div class="json__item"><div class="json__key">%KEY%</div><div class="json__value json__value--%TYPE%">%VALUE%</div></div>',
+        itemCollapsible: '<label class="json__item json__item--collapsible"><input type="checkbox" class="json__toggle"/><div class="json__key">%KEY%</div><div class="json__value json__value--type-%TYPE%">%VALUE%</div>%CHILDREN%</label>',
+        itemCollapsibleOpen: '<label class="json__item json__item--collapsible"><input type="checkbox" checked class="json__toggle"/><div class="json__key">%KEY%</div><div class="json__value json__value--type-%TYPE%">%VALUE%</div>%CHILDREN%</label>'
+      };
+
+      function createItem(key, value, type) {
+        var element = TEMPLATES.item.replace('%KEY%', key);
+
+        if (type == 'string') {
+          element = element.replace('%VALUE%', '"' + value + '"');
+        } else {
+          element = element.replace('%VALUE%', value);
+        }
+
+        element = element.replace('%TYPE%', type);
+
+        return element;
+      }
+
+      function createCollapsibleItem(key, value, type, children) {
+        var tpl = 'itemCollapsible';
+
+        if (collapsible) {
+          tpl = 'itemCollapsibleOpen';
+        }
+
+        var element = TEMPLATES[tpl].replace('%KEY%', key);
+
+        element = element.replace('%VALUE%', type);
+        element = element.replace('%TYPE%', type);
+        element = element.replace('%CHILDREN%', children);
+
+        return element;
+      }
+
+      function handleChildren(key, value, type) {
+        var html = '';
+
+        for (var item in value) {
+          var _key = item,
+            _val = value[item];
+
+          html += handleItem(_key, _val);
+        }
+
+        return createCollapsibleItem(key, value, type, html);
+      }
+
+      function handleItem(key, value) {
+        var type = typeof value;
+
+        if (typeof value === 'object') {
+          return handleChildren(key, value, type);
+        }
+
+        return createItem(key, value, type);
+      }
+
+      function parseObject(obj) {
+        _result = '<span class="json">';
+
+        for (var item in obj) {
+          var key = item,
+            value = obj[item];
+
+          _result += handleItem(key, value);
+        }
+
+        _result += '</span>';
+
+        return _result;
+      }
+
+      return parseObject(json);
+    };
+
+    // SSE
     var connected = false;
     var SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
-    const add = (message) => {
-      message = `[${new Date().toISOString().slice(0, 16)}] ${message}`;
+    const addMessage = (message) => {
+      var timestamp = "[" + new Date().toISOString().slice(0, 16) + "]";
       var el = document.createElement("span");
       el.className = "flash";
-      el.innerHTML = message.slice(0, 1000) + "<br>"; // fixing Safari display bug with long texts
+      el.innerHTML = timestamp + "&nbsp;" + message + "<br>";
       document.body.getElementsByClassName("fixed")[0].prepend(el);
     };
-    add("⚪️ Server connecting...");
+    const addJSON = (message) => {
+      var timestamp = "[" + new Date().toISOString().slice(0, 16) + "]";
+      var el = document.createElement("span");
+      el.className = "flash";
+      el.style = "display:flex; align-items:baseline;";
+      el.innerHTML =  timestamp + "&nbsp;&#128747;&nbsp;</span>" + jsonViewer(message);
+      document.body.getElementsByClassName("fixed")[0].prepend(el);
+    };
+    addMessage("⚪️ Server connecting...");
     const sse = new ReconnectingEventSource('/stream');
-    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => add("🛫 " + e.data));
+    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => addJSON(JSON.parse(e.data)));
     sse.addEventListener("error", (e) => {
-      if (connected) add("🔴 Server disconnected, reconnecting...");
+      if (connected) addMessage("🔴 Server disconnected, reconnecting...");
       connected = false;
     });
     sse.addEventListener("open", (e) => {
       connected = true;
-      add("🟢 Server connected.");
+      addMessage("🟢 Server connected.");
+      addJSON({key: "value"});
     });
   </script>
 </body>
