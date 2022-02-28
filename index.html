@@ -14,6 +14,12 @@
       font-family: "sans-serif";
     }
 
+    @media screen and (max-device-width: 480px) {
+      body {
+        -webkit-text-size-adjust: none;
+      }
+    }
+
     .header {
       border-bottom: 1px dashed lightgray;
       padding-bottom: 5px;
@@ -222,7 +228,8 @@
       var el = document.createElement("span");
       el.className = "flash";
       el.style = "display:flex; align-items:baseline;";
-      el.innerHTML = json ? timestamp + "&nbsp;&#128747;&nbsp;</span>" + jsonViewer(message) : timestamp + "&nbsp;" + message + "<br>";
+      el.innerHTML = json ? timestamp + "&nbsp;&#128747;&nbsp;</span>" + jsonViewer(message) : timestamp + "&nbsp;" +
+        message + "<br>";
       document.body.getElementsByClassName("fixed")[0].prepend(el);
     };
     addMessage("⚪️ Server connecting...");
