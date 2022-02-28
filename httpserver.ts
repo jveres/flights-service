@@ -20,9 +20,12 @@
  */
 
 import { writeAllSync } from "https://deno.land/std@0.127.0/streams/conversion.ts";
-import { Cache, HttpServer } from "https://deno.land/x/deco@0.9.6.4/mod.ts";
+import {
+  Cache,
+  HttpServer,
+  Multicast,
+} from "https://deno.land/x/deco@0.9.7/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
-import { Multicast } from "https://cdn.skypack.dev/queueable";
 
 const HOST = Deno.env.get("HOST") ?? "127.0.0.1";
 const PORT = 7999;
