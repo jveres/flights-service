@@ -5,7 +5,7 @@
   <title>Scheduled departure events test page</title>
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
-  <script src="https://cdn.jsdelivr.net/npm/reconnecting-eventsource@1.1.1/dist/ReconnectingEventSource.min.js">
+  <script src="https://cdn.jsdelivr.net/npm/reconnecting-eventsource@1.3.0/dist/ReconnectingEventSource.min.js">
   </script>
   <style type="text/css">
     body {
@@ -216,24 +216,17 @@
     // SSE
     var connected = false;
     var SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
-    const addMessage = (message) => {
-      var timestamp = "[" + new Date().toISOString().slice(0, 16) + "]";
-      var el = document.createElement("span");
-      el.className = "flash";
-      el.innerHTML = timestamp + "&nbsp;" + message + "<br>";
-      document.body.getElementsByClassName("fixed")[0].prepend(el);
-    };
-    const addJSON = (message) => {
+    const addMessage = (message, json = false) => {
       var timestamp = "[" + new Date().toISOString().slice(0, 16) + "]";
       var el = document.createElement("span");
       el.className = "flash";
       el.style = "display:flex; align-items:baseline;";
-      el.innerHTML =  timestamp + "&nbsp;&#128747;&nbsp;</span>" + jsonViewer(message);
+      el.innerHTML = json ? timestamp + "&nbsp;&#128747;&nbsp;</span>" + jsonViewer(message) : timestamp + "&nbsp;" + message + "<br>";
       document.body.getElementsByClassName("fixed")[0].prepend(el);
     };
     addMessage("⚪️ Server connecting...");
     const sse = new ReconnectingEventSource('/stream');
-    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => addJSON(JSON.parse(e.data)));
+    sse.addEventListener(SCHEDULED_DEPARTURE_EVENT_NAME, (e) => addMessage(JSON.parse(e.data), true));
     sse.addEventListener("error", (e) => {
       if (connected) addMessage("🔴 Server disconnected, reconnecting...");
       connected = false;
