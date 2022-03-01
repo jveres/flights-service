@@ -24,8 +24,12 @@ import {
   Cache,
   HttpServer,
   Multicast,
-} from "https://deno.land/x/deco@0.9.7/mod.ts";
+} from "https://deno.land/x/deco@0.9.7.1/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
+import {
+  Gauge,
+  Registry,
+} from "https://deno.land/x/ts_prometheus@v0.3.0/mod.ts";
 
 const HOST = Deno.env.get("HOST") ?? "127.0.0.1";
 const PORT = 7999;
@@ -34,6 +38,12 @@ const STREAM_KEEPALIVE = 15;
 const SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 const DB = new Database("flights.db", { readonly: true, create: false });
+const METRICS = {
+  event_stream_connections: Gauge.with({
+    name: "event_stream_connections",
+    help: "Number of connected SSE clients.",
+  }),
+};
 
 class FlightsService {
   #lastId: string | undefined;
@@ -73,12 +83,16 @@ class FlightsService {
     });
   }
 
+  #multicast = new Multicast();
+
   constructor() {
     this.refreshSchedule(true);
     this.keepAlive();
+    this.#multicast.onReceiverAdded = () =>
+      METRICS.event_stream_connections.inc();
+    this.#multicast.onReceiverRemoved = () =>
+      METRICS.event_stream_connections.dec();
   }
-
-  #multicast = new Multicast();
 
   refreshSchedule(forceRefresh = false) {
     const date = new Date();
@@ -139,6 +153,7 @@ class HttpService {
     for await (const event of this.#flightsService) {
       yield event;
     }
+    console.log("exited");
   }
 
   @Cache({ ttl: CACHE_TTL })
@@ -168,6 +183,18 @@ class HttpService {
       init: {
         headers: {
           "content-type": "application/json",
+        },
+      },
+    };
+  }
+
+  @HttpServer.Get()
+  metrics() {
+    return {
+      body: Registry.default.metrics(),
+      init: {
+        headers: {
+          "content-type": "",
         },
       },
     };
