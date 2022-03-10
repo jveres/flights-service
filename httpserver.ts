@@ -19,13 +19,14 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { writeAllSync } from "https://deno.land/std@0.127.0/streams/conversion.ts";
+import { writeAllSync } from "https://deno.land/std@0.129.0/streams/conversion.ts";
 import {
-  Cache,
   HttpServer,
   Multicast,
-} from "https://deno.land/x/deco@0.9.7.1/mod.ts";
-import { Database } from "https://deno.land/x/sqlite3@0.3.1/mod.ts";
+  SSE,
+} from "https://deno.land/x/deco@0.10.2/mod.ts";
+import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
+import { Database } from "https://deno.land/x/sqlite3@0.4.2/mod.ts";
 import {
   Gauge,
   Registry,
@@ -83,7 +84,7 @@ class FlightsService {
     });
   }
 
-  #multicast = new Multicast();
+  #multicast = new Multicast<string>();
 
   constructor() {
     this.refreshSchedule(true);
@@ -114,7 +115,7 @@ class FlightsService {
           this.#schedule = this.#schedule.concat(schedule);
           schedule.map((sched) =>
             this.#multicast.push(
-              HttpServer.SSE({
+              SSE({
                 event: SCHEDULED_DEPARTURE_EVENT_NAME,
                 data: JSON.stringify(sched),
               }),
@@ -133,7 +134,7 @@ class FlightsService {
 
   keepAlive() {
     this.#multicast.push(
-      HttpServer.SSE({ comment: "" }),
+      SSE({ comment: "" }),
     );
     setTimeout(() => this.keepAlive(), STREAM_KEEPALIVE * 1_000);
   }
@@ -147,29 +148,32 @@ class HttpService {
   #flightsService = new FlightsService();
 
   @HttpServer.Get()
-  @HttpServer.Chunked("text/event-stream")
-  async *stream() {
-    yield HttpServer.SSE({ comment: "" });
-    for await (const event of this.#flightsService) {
-      yield event;
+  @HttpServer.Before(() => ({
+    headers: { "content-type": "text/event-stream" },
+  }))
+  async *stream({ signal }: { signal: AbortSignal }) {
+    const schedule = this.#flightsService[Symbol.asyncIterator]();
+    try {
+      yield SSE({ comment: "" }); // wakeup the connection on Safari & Firefox
+      for await (const event of abortable(schedule, signal)) {
+        yield event;
+      }
+    } finally {
+      schedule.return!();
     }
-    console.log("exited");
   }
 
-  @Cache({ ttl: CACHE_TTL })
-  @HttpServer.ResponseInit(() => ({
-    init: {
-      headers: {
-        "cache-control": `public, max-age=${CACHE_TTL / 1000}`,
-      },
-    },
-  }))
   @HttpServer.Static({
     assets: [
       { fileName: "index.html", path: "/", contentType: "text/html" },
     ],
   })
-  index() {}
+  @HttpServer.Before(() => ({
+    headers: { "cache-control": `public, max-age=${CACHE_TTL / 1000}` },
+  }))
+  index() {
+    return new Response();
+  }
 
   @HttpServer.Get()
   schedule(
@@ -178,26 +182,20 @@ class HttpService {
     // deno-fmt-ignore
     const lastKnownId = new URLSearchParams(urlParams).get("last-known-id") ?? "0";
     const schedule = this.#flightsService.getSchedule(lastKnownId);
-    return {
-      body: JSON.stringify(schedule),
-      init: {
-        headers: {
-          "content-type": "application/json",
-        },
+    return new Response(JSON.stringify(schedule), {
+      headers: {
+        "content-type": "application/json",
       },
-    };
+    });
   }
 
   @HttpServer.Get()
   metrics() {
-    return {
-      body: Registry.default.metrics(),
-      init: {
-        headers: {
-          "content-type": "",
-        },
+    return new Response(Registry.default.metrics(), {
+      headers: {
+        "content-type": "",
       },
-    };
+    });
   }
 }
 
