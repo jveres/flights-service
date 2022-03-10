@@ -175,10 +175,10 @@ class HttpService {
 
   @HttpServer.Get()
   metrics() {
-    const metrics = `
-# HELP event_stream_connections Number of connected SSE clients.
+    const metrics = `# HELP event_stream_connections Number of connected SSE clients.
 # TYPE event_stream_connections gauge
-event_stream_connections ${this.#flightsService.multicast.size}`;
+event_stream_connections ${this.#flightsService.multicast.size}
+`;
     return new Response(metrics);
   }
 }
@@ -193,13 +193,8 @@ function gracefulShutdown() {
   Deno.exit();
 }
 
-Deno.addSignalListener("SIGINT", () => {
-  gracefulShutdown();
-});
-
-Deno.addSignalListener("SIGTERM", () => {
-  gracefulShutdown();
-});
+Deno.addSignalListener("SIGINT", gracefulShutdown);
+Deno.addSignalListener("SIGTERM", gracefulShutdown);
 
 HttpServer.serve({
   controllers: [HttpService],
