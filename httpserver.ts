@@ -27,10 +27,6 @@ import {
 } from "https://deno.land/x/deco@0.10.3/mod.ts";
 import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.4.2/mod.ts";
-import {
-  Gauge,
-  Registry,
-} from "https://deno.land/x/ts_prometheus@v0.3.0/mod.ts";
 
 const HOST = Deno.env.get("HOST") ?? "127.0.0.1";
 const PORT = 7999;
@@ -39,12 +35,6 @@ const STREAM_KEEPALIVE = 15;
 const SCHEDULED_DEPARTURE_EVENT_NAME = "scheduled_departure";
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 const DB = new Database("flights.db", { readonly: true, create: false });
-const METRICS = {
-  event_stream_connections: Gauge.with({
-    name: "event_stream_connections",
-    help: "Number of connected SSE clients.",
-  }),
-};
 
 class FlightsService {
   #lastId: string | undefined;
@@ -84,15 +74,11 @@ class FlightsService {
     });
   }
 
-  #multicast = new Multicast<string>();
+  multicast = new Multicast<string>();
 
   constructor() {
     this.refreshSchedule(true);
     this.keepAlive();
-    this.#multicast.onReceiverAdded = () =>
-      METRICS.event_stream_connections.inc();
-    this.#multicast.onReceiverRemoved = () =>
-      METRICS.event_stream_connections.dec();
   }
 
   refreshSchedule(forceRefresh = false) {
@@ -114,7 +100,7 @@ class FlightsService {
           print(`${"🛫 ".repeat(schedule.length)} ${this.#lastId} `);
           this.#schedule = this.#schedule.concat(schedule);
           schedule.map((sched) =>
-            this.#multicast.push(
+            this.multicast.push(
               SSE({
                 event: SCHEDULED_DEPARTURE_EVENT_NAME,
                 data: JSON.stringify(sched),
@@ -133,14 +119,14 @@ class FlightsService {
   }
 
   keepAlive() {
-    this.#multicast.push(
+    this.multicast.push(
       SSE({ comment: "" }),
     );
     setTimeout(() => this.keepAlive(), STREAM_KEEPALIVE * 1_000);
   }
 
   [Symbol.asyncIterator]() {
-    return this.#multicast[Symbol.asyncIterator]();
+    return this.multicast[Symbol.asyncIterator]();
   }
 }
 
@@ -189,11 +175,11 @@ class HttpService {
 
   @HttpServer.Get()
   metrics() {
-    return new Response(Registry.default.metrics(), {
-      headers: {
-        "content-type": "",
-      },
-    });
+    const metrics = `
+# HELP event_stream_connections Number of connected SSE clients.
+# TYPE event_stream_connections gauge
+event_stream_connections ${this.#flightsService.multicast.size}`;
+    return new Response(metrics);
   }
 }
 
