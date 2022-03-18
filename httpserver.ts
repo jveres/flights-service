@@ -19,13 +19,13 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { writeAllSync } from "https://deno.land/std@0.129.0/streams/conversion.ts";
+import { writeAllSync } from "https://deno.land/std@0.130.0/streams/conversion.ts";
 import {
   HttpServer,
   Multicast,
   SSE,
 } from "https://deno.land/x/deco@0.10.3/mod.ts";
-import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
+import { abortable } from "https://deno.land/std@0.130.0/async/mod.ts";
 import { Database } from "https://deno.land/x/sqlite3@0.4.2/mod.ts";
 
 const HOST = Deno.env.get("HOST") ?? "127.0.0.1";
